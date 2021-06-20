@@ -6,7 +6,8 @@ args = dotdict()
 
 args.model = 'mlp'
 
-args.data_path = "../data/electricity/electricity.txt.gz"
+# args.data_path = "../data/electricity/electricity.txt.gz"
+args.data_path = "../data/exchange_rate/exchange_rate.txt.gz"
 args.freq = 'H'
 args.start_date = "2014-01-01"
 args.cols=[0]
@@ -32,3 +33,7 @@ exp = Exp(args)
 
 print('>>>>>>>start training>>>>>>>>>>>>>>>>>>>>>>>>>>')
 exp.train()
+
+print('>>>>>>>start testing>>>>>>>>>>>>>>>>>>>>>>>>>>')
+exp.test()
+

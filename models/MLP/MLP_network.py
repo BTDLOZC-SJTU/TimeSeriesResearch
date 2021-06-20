@@ -19,9 +19,9 @@ class MLP(nn.Module):
         modules = []
         dims = self.num_hidden_dimension
 
-        for i, units in enumerate(dims[: - 1]):
+        for i, units in enumerate(dims):
             if i == 0:
-                input_size = self.hist_len
+                input_size = hist_len
             else:
                 input_size = dims[i - 1]
             modules += [nn.Linear(input_size, units), nn.ReLU()]
@@ -31,5 +31,7 @@ class MLP(nn.Module):
         self.mlp = nn.Sequential(*modules)
 
     def forward(self, x):
+        x = x.transpose(1, 2)
         x = self.mlp(x)
+        x = x.transpose(1, 2)
         return x

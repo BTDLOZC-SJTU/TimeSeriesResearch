@@ -36,7 +36,6 @@ class Exp_MLP(Exp_Basic):
                           pred_len=self.args.pred_len,
                           cols=self.args.cols)
 
-
         print(flag, len(data_set))
 
         if flag == 'test':
@@ -65,8 +64,8 @@ class Exp_MLP(Exp_Basic):
         return criterion
 
     def _process_one_batch(self, dataset_object, batch_x, batch_y, batch_x_mark, batch_y_mark):
-        batch_x = batch_x.float().to(self.args.device)
-        batch_y = batch_y.float()
+        batch_x = batch_x.float().to(self.device)
+        batch_y = batch_y.float().to(self.device)
 
         # batch_x_mark = batch_x_mark.float().to(self.args.device)
         # batch_y_mark = batch_y_mark.float().to(self.args.device)
@@ -108,7 +107,7 @@ class Exp_MLP(Exp_Basic):
                     train_data, batch_x, batch_y, batch_x_mark, batch_y_mark
                 )
                 loss = criterion(pred, ture)
-                train_loss.append(loss)
+                train_loss.append(loss.item())
 
                 if (i + 1) % 100==0:
                     print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
@@ -126,7 +125,8 @@ class Exp_MLP(Exp_Basic):
         return self.model
 
     def test(self):
-        test_data, test_loader = self._get_data(flag='test')
+        # test_data, test_loader = self._get_data(flag='test')
+        test_data, test_loader = self._get_data(flag='train')
 
         self.model.eval()
 
@@ -149,13 +149,13 @@ class Exp_MLP(Exp_Basic):
         trues = trues.reshape(-1, trues.shape[-2], trues.shape[-1])
         print('test shape:', preds.shape, trues.shape)
 
-        # import matplotlib.pyplot as plt
-        # for i in range(min(trues.shape[0], 100)):
-        #   plt.figure()
-        #   plt.plot(np.arange(len(pres[i, :, -1])), pres[i, :, -1], label='GroundTruth')
-        #   plt.plot(np.arange(len(pres[i, :, -1]) - len(preds[i, :, -1]), len(pres[i, :, -1])), preds[i, :, -1], label='Prediction')
-        #   plt.legend()
-        #   plt.show()
+        import matplotlib.pyplot as plt
+        for i in range(min(trues.shape[0], 100)):
+          plt.figure()
+          plt.plot(np.arange(len(pres[i, :, -1])), pres[i, :, -1], label='GroundTruth')
+          plt.plot(np.arange(len(pres[i, :, -1]) - len(preds[i, :, -1]), len(pres[i, :, -1])), preds[i, :, -1], label='Prediction')
+          plt.legend()
+          plt.show()
 
         # mae, mse, rmse, mape, mspe = metric(preds, trues)
         # print('mse:{}, mae:{}'.format(mse, mae))
