@@ -137,7 +137,7 @@ class Exp_MLP_proba(Exp_Basic):
 
             pres.append(batch_x.detach().cpu().numpy())
 
-            preds.append(np.array(distr.sample([num_samples]).squeeze(1)))
+            preds.append(distr.sample([num_samples]).squeeze(1).cpu().numpy())
             # trues.append(true.detach().cpu().numpy())
 
         pres = np.array(pres).squeeze(1)
