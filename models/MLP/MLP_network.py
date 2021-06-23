@@ -7,17 +7,17 @@ from typing import List
 
 class MLP(nn.Module):
     def __init__(self,
-                 num_hidden_dimension: List[int],
+                 num_hidden_dimensions: List[int],
                  hist_len: int,
-                 pred_len: int):
+                 pred_len: int,):
         super(MLP, self).__init__()
 
-        self.num_hidden_dimension = num_hidden_dimension
+        self.num_hidden_dimensions = num_hidden_dimensions
         self.hist_len = hist_len
         self.pred_len = pred_len
 
         modules = []
-        dims = self.num_hidden_dimension
+        dims = self.num_hidden_dimensions
 
         for i, units in enumerate(dims):
             if i == 0:

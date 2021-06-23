@@ -21,8 +21,8 @@ class Dataset_TS(Dataset):
                  cols: Optional[List[int]] = None,
                  train_valid_test_weights: Tuple = (0.7, 0.1, 0.2)
                  ):
-        assert flag in ['train', 'test', 'val']
-        type_map = {'train': 0, 'val': 1, 'test': 2}
+        assert flag in ['train', 'test', 'val', 'pred']
+        type_map = {'train': 0, 'val': 1, 'test': 2, 'pred': 0}
         self.set_type = type_map[flag]
 
         self.data_path = data_path
