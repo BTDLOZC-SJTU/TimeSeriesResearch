@@ -3,9 +3,11 @@ from models.MLP_proba.MLP_proba_network import  MLP_proba
 from data.data_loader import Dataset_TS
 from utils.plot_proba_forcast import plot_proba_forcast
 from utils.metrics_proba import metric
+from utils.tools import EarlyStopping
 
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 import torch
 import torch.nn as nn
 from torch import optim
@@ -89,9 +91,14 @@ class Exp_MLP_proba(Exp_Basic):
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
 
+        path = os.path.join(self.args.checkpoints)
+        if not os.path.exists(path):
+            os.makedirs(path)
+
         train_steps = len(train_loader)
 
         model_optim = self._select_optimizer()
+        early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
 
         for epoch in range(self.args.train_epochs):
             train_loss = []
@@ -116,6 +123,14 @@ class Exp_MLP_proba(Exp_Basic):
 
             print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
                 epoch + 1, train_steps, train_loss, vali_loss, test_loss))
+
+            early_stopping(vali_loss, self.model, path)
+            if early_stopping.early_stop:
+                print("Early stopping")
+                break
+
+        best_model_path = path + '/' + 'checkpoint.pth'
+        self.model.load_state_dict(torch.load(best_model_path))
 
         return self.model
 

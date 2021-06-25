@@ -22,7 +22,9 @@ args.batch_size = 64
 args.learning_rate = 0.001
 args.num_workers = 0
 
-args.train_epochs = 1
+args.train_epochs = 20
+args.patience = 5
+args.checkpoints = "MLP_proba_checkpoints"
 
 args.use_gpu = True if torch.cuda.is_available() else False
 
