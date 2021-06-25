@@ -138,7 +138,7 @@ class Exp_MLP(Exp_Basic):
         for i, (batch_x,batch_y,batch_x_mark,batch_y_mark) in enumerate(test_loader):
             pred, true = self._process_one_batch(
                 test_data, batch_x, batch_y, batch_x_mark, batch_y_mark)
-            pres.append(batch_y.detach().cpu().numpy())
+            pres.append(batch_x.detach().cpu().numpy())
             preds.append(pred.detach().cpu().numpy())
             trues.append(true.detach().cpu().numpy())
         pres = np.array(pres)
@@ -150,13 +150,14 @@ class Exp_MLP(Exp_Basic):
         trues = trues.reshape(-1, trues.shape[-2], trues.shape[-1])
         print('test shape:', preds.shape, trues.shape)
 
-        mae, mse, rmse, mape, mspe = metric(preds, trues)
-        print('mse:{}, mae:{}'.format(mse, mae))
+        metrics = metric(preds, trues)
+        print('mse:{}, mae:{}'.format(metrics['MSE'], metrics['MAE']))
+        print(metrics)
 
         i = 0
         plt.figure()
-        plt.plot(np.arange(len(pres[i, :, -1])), pres[i, :, -1], label='GroundTruth')
-        plt.plot(np.arange(len(pres[i, :, -1]) - len(preds[i, :, -1]), len(pres[i, :, -1])), preds[i, :, -1], label='Prediction')
+        plt.plot(np.arange(len(pres[i, : -1, -1])), pres[i, : -1, -1], label='GroundTruth')
+        plt.plot(np.arange(len(pres[i, :, -1]) - len(preds[i, :, -1]), len(pres[i, :, -1])) - 1, preds[i, :, -1], label='Prediction')
         plt.legend()
         plt.show()
 

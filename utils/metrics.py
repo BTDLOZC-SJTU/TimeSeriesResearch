@@ -28,9 +28,9 @@ def CORR(pred, true):
 def metric(pred, true, metric_params=None):
     if metric_params is None:
         metric_params = ['mae', 'mse', 'rmse', 'mape', 'mspe']
-    metrics = []
+    metrics = dict()
     metrics_dict = {'mae': MAE, 'mse': MSE, 'rmse': RMSE, 'mape': MAPE, 'mspe': MSPE, 'rse': RSE, 'corr': CORR}
     for p in metric_params:
-        metrics.append(metrics_dict[p](pred, true))
+        metrics[p.upper()] = metrics_dict[p](pred, true)
 
     return metrics

@@ -23,7 +23,7 @@ args.learning_rate = 0.0001
 args.loss = 'mse'
 args.num_workers = 0
 
-args.train_epochs = 10
+args.train_epochs = 1
 
 args.use_gpu = True if torch.cuda.is_available() else False
 

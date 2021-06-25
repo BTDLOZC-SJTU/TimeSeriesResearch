@@ -144,9 +144,9 @@ class Exp_MLP_proba(Exp_Basic):
         preds = np.array(preds)
         trues = np.array(trues).squeeze(1)
 
-        mae, mse, rmse, mape, mspe = metric(preds, trues)
-        print('mse:{}, mae:{}'.format(mse, mae))
-
+        metrics = metric(preds, trues)
+        print('mse:{}, mae:{}'.format(metrics['MSE'], metrics['MAE']))
+        print(metrics)
 
         i = 0
         plt.figure()
