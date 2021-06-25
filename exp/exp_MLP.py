@@ -1,9 +1,10 @@
 from exp.exp_basic import Exp_Basic
 from models.MLP.MLP_network import MLP
 from data.data_loader import Dataset_TS
+from utils.metrics import metric
 
 import numpy as np
-
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from torch import optim
@@ -126,7 +127,7 @@ class Exp_MLP(Exp_Basic):
 
     def test(self):
         # test_data, test_loader = self._get_data(flag='test')
-        test_data, test_loader = self._get_data(flag='train')
+        test_data, test_loader = self._get_data(flag='pred')
 
         self.model.eval()
 
@@ -149,14 +150,15 @@ class Exp_MLP(Exp_Basic):
         trues = trues.reshape(-1, trues.shape[-2], trues.shape[-1])
         print('test shape:', preds.shape, trues.shape)
 
-        import matplotlib.pyplot as plt
-        for i in range(min(trues.shape[0], 100)):
-          plt.figure()
-          plt.plot(np.arange(len(pres[i, :, -1])), pres[i, :, -1], label='GroundTruth')
-          plt.plot(np.arange(len(pres[i, :, -1]) - len(preds[i, :, -1]), len(pres[i, :, -1])), preds[i, :, -1], label='Prediction')
-          plt.legend()
-          plt.show()
+        mae, mse, rmse, mape, mspe = metric(preds, trues)
+        print('mse:{}, mae:{}'.format(mse, mae))
 
-        # mae, mse, rmse, mape, mspe = metric(preds, trues)
-        # print('mse:{}, mae:{}'.format(mse, mae))
+        i = 0
+        plt.figure()
+        plt.plot(np.arange(len(pres[i, :, -1])), pres[i, :, -1], label='GroundTruth')
+        plt.plot(np.arange(len(pres[i, :, -1]) - len(preds[i, :, -1]), len(pres[i, :, -1])), preds[i, :, -1], label='Prediction')
+        plt.legend()
+        plt.show()
+
+
 

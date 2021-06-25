@@ -2,9 +2,10 @@ from exp.exp_basic import Exp_Basic
 from models.MLP_proba.MLP_proba_network import  MLP_proba
 from data.data_loader import Dataset_TS
 from utils.plot_proba_forcast import plot_proba_forcast
+from utils.metrics_proba import metric
 
 import numpy as np
-
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from torch import optim
@@ -136,22 +137,20 @@ class Exp_MLP_proba(Exp_Basic):
             distr = self.model(batch_x)
 
             pres.append(batch_x.detach().cpu().numpy())
-
             preds.append(distr.sample([num_samples]).squeeze(1).cpu().numpy())
-            # trues.append(true.detach().cpu().numpy())
+            trues.append(batch_y.detach().cpu().numpy())
 
         pres = np.array(pres).squeeze(1)
         preds = np.array(preds)
+        trues = np.array(trues).squeeze(1)
 
-        import matplotlib.pyplot as plt
-        for i in range(min(pres.shape[0], 1)):
-          plt.figure()
-          plt.plot(np.arange(pres.shape[1] - 1), pres[i, : -1, -1], label='GroundTruth')
-          # plt.plot(np.arange(len(pres[i, :, -1]) - len(preds[i, :, -1]), len(pres[i, :, -1])) - 1, preds[i, :, -1], label='Prediction')
-          plot_proba_forcast(np.arange(pres.shape[1] - preds.shape[2], pres.shape[1]) - 1, preds[i, :, :, -1])
-          plt.legend()
-          plt.show()
+        mae, mse, rmse, mape, mspe = metric(preds, trues)
+        print('mse:{}, mae:{}'.format(mse, mae))
 
-        # mae, mse, rmse, mape, mspe = metric(preds, trues)
-        # print('mse:{}, mae:{}'.format(mse, mae))
 
+        i = 0
+        plt.figure()
+        plt.plot(np.arange(pres.shape[1] - 1), pres[i, : -1, -1], label='GroundTruth')
+        plot_proba_forcast(np.arange(pres.shape[1] - preds.shape[2], pres.shape[1]) - 1, preds[i, :, :, -1])
+        plt.legend()
+        plt.show()
