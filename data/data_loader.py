@@ -5,6 +5,7 @@ from typing import Optional, List, Tuple
 import torch
 from torch.utils.data import Dataset, DataLoader
 
+from utils.timefeatures import timeFeatures
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -22,7 +23,7 @@ class Dataset_TS(Dataset):
                  train_valid_test_weights: Tuple = (0.7, 0.1, 0.2)
                  ):
         assert flag in ['train', 'test', 'val', 'pred']
-        type_map = {'train': 0, 'val': 1, 'test': 2, 'pred': 0}
+        type_map = {'train': 0, 'val': 1, 'test': 2, 'pred': 2}
         self.set_type = type_map[flag]
 
         self.data_path = data_path
@@ -37,6 +38,7 @@ class Dataset_TS(Dataset):
     def __read_data__(self):
         df_raw = pd.read_csv(self.data_path, usecols=self.cols, header=None)
         num_time_steps = df_raw.shape[0]
+        df_stamp = pd.date_range(start=self.start_date, periods=num_time_steps, freq=self.freq)
 
         train_len = int(num_time_steps * 0.7)
         test_len = int(num_time_steps * 0.2)
@@ -47,11 +49,12 @@ class Dataset_TS(Dataset):
         border1 = border1s[self.set_type]
         border2 = border2s[self.set_type]
 
-        # TODO: add time feature transformation
         data = df_raw.values
+        data_stamp = timeFeatures(df_stamp, freq=self.freq)
 
         self.data_x = data[border1: border2]
         self.data_y = data[border1: border2]
+        self.data_stamp = data_stamp[border1: border2]
 
     def __getitem__(self, index: int):
         h_begin = index
@@ -61,10 +64,8 @@ class Dataset_TS(Dataset):
 
         seq_x = self.data_x[h_begin: h_end]
         seq_y = self.data_y[p_begin: p_end]
-
-        # TODO: add time feature inputs
-        seq_x_mark = np.ones_like(seq_x)
-        seq_y_mark = np.ones_like(seq_y)
+        seq_x_mark = self.data_stamp[h_begin: h_end]
+        seq_y_mark = self.data_stamp[p_begin: p_end]
 
         return seq_x, seq_y, seq_x_mark, seq_y_mark
 

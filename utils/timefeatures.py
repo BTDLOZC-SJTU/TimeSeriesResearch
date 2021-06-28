@@ -2,29 +2,72 @@
 
 import numpy as np
 import pandas as pd
+from pandas.tseries import offsets
+from pandas.tseries.frequencies import to_offset
 
 
 def SecondOfMinute(index: pd.DatetimeIndex) -> np.ndarray:
     return index.second / 59.0 - 0.5
 
+
 def MinuteOfHour(index: pd.DatetimeIndex) -> np.ndarray:
     return index.minute / 59.0 - 0.5
+
 
 def HourOfDay(index: pd.DatetimeIndex) -> np.ndarray:
     return index.hour / 23.0 - 0.5
 
+
 def DayOfWeek(index: pd.DatetimeIndex) -> np.ndarray:
     return (index.dayofweek - 1) / 6.0 - 0.5
+
 
 def DayOfMonth(index: pd.DatetimeIndex) -> np.ndarray:
     return (index.day - 1) / 30.0 - 0.5
 
+
 def DayOfYear(index: pd.DatetimeIndex) -> np.ndarray:
     return (index.dayofyear - 1) / 365.0 - 0.5
+
 
 def MonthOfYear(index: pd.DatetimeIndex) -> np.ndarray:
     return (index.month - 1) / 11.0 - 0.5
 
+
 def WeekOfYear(index: pd.DatetimeIndex) -> np.ndarray:
     return (index.weekofyear - 1) / 52.0 - 0.5
 
+
+def ConstantAge(index: pd.DatetimeIndex) -> np.ndarray:
+    return (np.arange(index.shape[0]) - index.shape[0] // 2) / index.shape[0]
+
+
+def timeFeatures(dates: pd.DatetimeIndex, freq: str='H') -> np.ndarray:
+    """
+    supported freq:
+    > * Y: yearly = []
+    > * M: monthly = [month]
+    > * W: weekly = [day of month, week of year]
+    > * D: daily = [day of week, day of month, day of year]
+    > * H: hourly = [hour of day, day of week, day of month, day of year]
+    > * T: minutely = [minute of hour, hour of day, day of week, day of month, day of year]
+    > * S: secondly = [second of minute, minute of hour, hour of day, day of week, day of month, day of year]
+    """
+    features_by_offsets = {
+        offsets.YearEnd: [ConstantAge],
+        offsets.MonthEnd: [MonthOfYear],
+        offsets.Week: [DayOfMonth, WeekOfYear],
+        offsets.Day: [DayOfWeek, DayOfMonth, DayOfYear],
+        offsets.Hour: [HourOfDay, DayOfWeek, DayOfMonth, DayOfYear],
+        offsets.Minute: [MinuteOfHour, HourOfDay, DayOfWeek, DayOfMonth, DayOfYear],
+        offsets.Second: [SecondOfMinute, MinuteOfHour, HourOfDay, DayOfWeek, DayOfMonth, DayOfYear]
+    }
+
+    offset = to_offset(freq)
+
+    time_features_from_frequency = []
+    for offset_type, feature_classes in features_by_offsets.items():
+        if isinstance(offset, offset_type):
+            time_features_from_frequency = feature_classes
+
+    return np.vstack([feat(dates) for feat in time_features_from_frequency]).transpose(1, 0)

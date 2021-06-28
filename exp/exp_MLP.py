@@ -21,6 +21,9 @@ class Exp_MLP(Exp_Basic):
         assert self.args.model == 'mlp'
 
         model = MLP(
+            self.args.c_in,
+            self.args.c_out,
+            self.args.d_model,
             self.args.num_hidden_dimension,
             self.args.hist_len,
             self.args.pred_len
@@ -69,11 +72,10 @@ class Exp_MLP(Exp_Basic):
     def _process_one_batch(self, dataset_object, batch_x, batch_y, batch_x_mark, batch_y_mark):
         batch_x = batch_x.float().to(self.device)
         batch_y = batch_y.float().to(self.device)
+        batch_x_mark = batch_x_mark.float().to(self.device)
+        batch_y_mark = batch_y_mark.float().to(self.device)
 
-        # batch_x_mark = batch_x_mark.float().to(self.args.device)
-        # batch_y_mark = batch_y_mark.float().to(self.args.device)
-
-        outputs = self.model(batch_x)
+        outputs = self.model(batch_x, batch_x_mark, batch_y_mark)
 
         return outputs, batch_y
 
