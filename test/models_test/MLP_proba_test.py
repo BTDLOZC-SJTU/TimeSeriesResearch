@@ -9,9 +9,9 @@ args = dotdict()
 
 args.model = 'mlp_proba'
 
-args.data_path = "../data/electricity/electricity.txt.gz"
+# args.data_path = "../data/electricity/electricity.txt.gz"
 # args.data_path = "../data/exchange_rate/exchange_rate.txt.gz"
-# args.data_path = "../data/simple_sin/simple_sin.csv"
+args.data_path = "../data/simple_sin/simple_sin.csv"
 args.freq = 'H'
 args.start_date = "2014-01-01"
 args.cols=[0]

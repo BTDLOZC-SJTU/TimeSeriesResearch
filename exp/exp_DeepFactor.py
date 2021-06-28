@@ -1,5 +1,5 @@
 from exp.exp_basic import Exp_Basic
-from models.MLP_proba.MLP_proba_network import MLP_proba
+from models.DeepFactor.DeepFactor_network import DeepFactor
 from data.data_loader import Dataset_TS
 from utils.plot_proba_forcast import plot_proba_forcast
 from utils.metrics_proba import metric
@@ -8,26 +8,34 @@ from utils.tools import EarlyStopping
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import math
 import torch
 import torch.nn as nn
+from torch.distributions.normal import Normal
 from torch import optim
 from torch.utils.data import DataLoader
 
 
-class Exp_MLP_proba(Exp_Basic):
+class Exp_DeepFactor(Exp_Basic):
     def __init__(self, args):
-        super(Exp_MLP_proba, self).__init__(args)
+        super(Exp_DeepFactor, self).__init__(args)
 
     def _build_model(self):
-        assert self.args.model == 'mlp_proba'
+        assert self.args.model == 'deepfactor'
 
-        model = MLP_proba(
+        model = DeepFactor(
             self.args.c_in,
             self.args.c_out,
             self.args.d_model,
-            self.args.num_hidden_dimension,
             self.args.hist_len,
             self.args.pred_len,
+            self.args.num_hidden_global,
+            self.args.num_layers_global,
+            self.args.num_factors,
+            self.args.num_hidden_local,
+            self.args.num_layers_local,
+            self.args.embedding_dim,
+            self.args.cell_type,
             self.args.freq,
             self.args.use_time_feat
         ).float().to(self.args.device)
@@ -38,12 +46,13 @@ class Exp_MLP_proba(Exp_Basic):
         args = self.args
 
         data_set = Dataset_TS(data_path=self.args.data_path,
-                          freq=self.args.freq,
-                          start_date=self.args.start_date,
-                          flag=flag,
-                          hist_len=self.args.hist_len,
-                          pred_len=self.args.pred_len,
-                          cols=self.args.cols)
+                              freq=self.args.freq,
+                              start_date=self.args.start_date,
+                              flag=flag,
+                              hist_len=self.args.hist_len,
+                              pred_len=self.args.pred_len,
+                              cols=self.args.cols,
+                              scale=self.args.scale)
 
         print(flag, len(data_set))
 
@@ -67,24 +76,32 @@ class Exp_MLP_proba(Exp_Basic):
         model_optim = optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
         return model_optim
 
+    def _select_criterion(self):
+        def negative_normal_likelihood(y, mu, sigma):
+            return (torch.log(sigma)
+                    + 0.5 * math.log(2 * math.pi)
+                    + 0.5 * torch.square((y - mu) / sigma))
+        return negative_normal_likelihood
+
     def _process_one_batch(self, dataset_object, batch_x, batch_y, batch_x_mark, batch_y_mark):
         batch_x = batch_x.float().to(self.device)
         batch_y = batch_y.float().to(self.device)
         batch_x_mark = batch_x_mark.float().to(self.device)
         batch_y_mark = batch_y_mark.float().to(self.device)
 
-        distr = self.model(batch_x, batch_x_mark, batch_y_mark)
-        loss = -distr.log_prob(batch_y)
+        fixed_effect, random_effect = self.model(batch_x, batch_x_mark, batch_y_mark)
 
-        return loss.mean()
+        return fixed_effect, random_effect
 
     def vali(self, vali_data, vali_loader):
         self.model.eval()
+        criterion = self._select_criterion()
         total_loss = []
         for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(vali_loader):
-            loss = self._process_one_batch(
+            fixed_effect, random_effect = self._process_one_batch(
                 vali_data, batch_x, batch_y, batch_x_mark, batch_y_mark
             )
+            loss = criterion(batch_x.to(self.device), fixed_effect, random_effect).mean()
             total_loss.append(loss.item())
         total_loss = np.average(total_loss)
         self.model.train()
@@ -102,6 +119,7 @@ class Exp_MLP_proba(Exp_Basic):
         train_steps = len(train_loader)
 
         model_optim = self._select_optimizer()
+        criterion = self._select_criterion()
         early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
 
         for epoch in range(self.args.train_epochs):
@@ -110,9 +128,10 @@ class Exp_MLP_proba(Exp_Basic):
             self.model.train()
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
                 model_optim.zero_grad()
-                loss = self._process_one_batch(
+                fixed_effect, random_effect = self._process_one_batch(
                     train_data, batch_x, batch_y, batch_x_mark, batch_y_mark
                 )
+                loss = criterion(batch_x.to(self.device), fixed_effect, random_effect).mean()
                 train_loss.append(loss.item())
 
                 if (i + 1) % 100==0:
@@ -153,10 +172,16 @@ class Exp_MLP_proba(Exp_Basic):
 
             batch_x_mark = batch_x_mark.float().to(self.args.device)
             batch_y_mark = batch_y_mark.float().to(self.args.device)
-            distr = self.model(batch_x, batch_x_mark, batch_y_mark)
+            fixed_effect, random_effect =  self._process_one_batch(test_data,
+                                                                   batch_x,
+                                                                   batch_y,
+                                                                   torch.cat((batch_x_mark, batch_y_mark), dim=1),
+                                                                   batch_y_mark)
+            distr = Normal(fixed_effect, random_effect)
 
             pres.append(batch_x.detach().cpu().numpy())
-            preds.append(distr.sample([num_samples]).squeeze(1).cpu().numpy())
+            # TODO: inverse scale
+            preds.append(distr.sample([num_samples]).squeeze(1)[:, -self.args.pred_len: , :].cpu().numpy())
             trues.append(batch_y.detach().cpu().numpy())
 
         pres = np.array(pres).squeeze(1)
@@ -167,9 +192,10 @@ class Exp_MLP_proba(Exp_Basic):
         print('mse:{}, mae:{}'.format(metrics['MSE'], metrics['MAE']))
         print(metrics)
 
-        i = 0
-        plt.figure()
-        plt.plot(np.arange(pres.shape[1] - 1), pres[i, : -1, -1], label='GroundTruth')
-        plot_proba_forcast(np.arange(pres.shape[1] - preds.shape[2], pres.shape[1]) - 1, preds[i, :, :, -1])
-        plt.legend()
-        plt.show()
+        # i = 0
+        for i in range(50):
+            plt.figure()
+            plt.plot(np.arange(pres.shape[1] - 1), pres[i, : -1, -1], label='GroundTruth')
+            plot_proba_forcast(np.arange(pres.shape[1] - preds.shape[2], pres.shape[1]) - 1, preds[i, :, :, -1])
+            plt.legend()
+            plt.show()
