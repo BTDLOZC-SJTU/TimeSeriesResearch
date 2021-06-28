@@ -9,8 +9,8 @@ args = dotdict()
 
 args.model = 'mlp'
 
-args.data_path = "../data/electricity/electricity.txt.gz"
-# args.data_path = "../data/exchange_rate/exchange_rate.txt.gz"
+# args.data_path = "../data/electricity/electricity.txt.gz"
+args.data_path = "../data/exchange_rate/exchange_rate.txt.gz"
 # args.data_path = "../data/simple_sin/simple_sin.csv"
 args.freq = 'H'
 args.start_date = "2014-01-01"
@@ -21,6 +21,7 @@ args.pred_len = 24
 args.c_in = 1  # input target feature dimension
 args.c_out = 1  # output target feature dimension
 args.d_model = 16  # model dimension
+args.use_time_freq = False
 
 args.num_hidden_dimension = [512, 256, 128]
 

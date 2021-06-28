@@ -26,7 +26,9 @@ class Exp_MLP(Exp_Basic):
             self.args.d_model,
             self.args.num_hidden_dimension,
             self.args.hist_len,
-            self.args.pred_len
+            self.args.pred_len,
+            self.args.freq,
+            self.args.use_time_feat
         ).float().to(self.args.device)
 
         return model

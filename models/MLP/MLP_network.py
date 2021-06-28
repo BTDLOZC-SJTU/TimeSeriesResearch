@@ -15,7 +15,8 @@ class MLP(nn.Module):
                  num_hidden_dimensions: List[int],
                  hist_len: int,
                  pred_len: int,
-                 freq: str = 'H'):
+                 freq: str = 'H',
+                 use_time_feat: bool = True):
         super(MLP, self).__init__()
 
         self.c_in = c_in
@@ -27,7 +28,7 @@ class MLP(nn.Module):
         self.freq = freq
 
         # Embedding
-        self.embedding = DataEmbedding(c_in, d_model, freq)
+        self.embedding = DataEmbedding(c_in, d_model, freq, use_time_feat=use_time_feat)
 
         modules = []
         dims = self.num_hidden_dimensions

@@ -26,14 +26,18 @@ class TimeFeatureEmbedding(nn.Module):
 
 
 class DataEmbedding(nn.Module):
-    def __init__(self, c_in: int, d_model: int, freq='H', dropout=0.1):
+    def __init__(self, c_in: int, d_model: int, freq='H', dropout=0.1, use_time_feat=True):
         super(DataEmbedding, self).__init__()
 
         self.value_embedding = TokenLinearEmbedding(c_in, d_model)
         self.temporal_embedding = TimeFeatureEmbedding(d_model, freq)
         self.dropout = nn.Dropout(p=dropout)
+        self.use_time_feat = use_time_feat
 
     def forward(self, x, x_mark):
-        x = self.value_embedding(x) + self.temporal_embedding(x_mark)
+        if self.use_time_feat:
+            x = self.value_embedding(x) + self.temporal_embedding(x_mark)
+        else:
+            x = self.value_embedding(x)
 
         return x

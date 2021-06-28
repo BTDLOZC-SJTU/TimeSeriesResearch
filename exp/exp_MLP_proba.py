@@ -22,9 +22,14 @@ class Exp_MLP_proba(Exp_Basic):
         assert self.args.model == 'mlp_proba'
 
         model = MLP_proba(
+            self.args.c_in,
+            self.args.c_out,
+            self.args.d_model,
             self.args.num_hidden_dimension,
             self.args.hist_len,
-            self.args.pred_len
+            self.args.pred_len,
+            self.args.freq,
+            self.args.use_time_feat
         ).float().to(self.args.device)
 
         return model
@@ -65,11 +70,10 @@ class Exp_MLP_proba(Exp_Basic):
     def _process_one_batch(self, dataset_object, batch_x, batch_y, batch_x_mark, batch_y_mark):
         batch_x = batch_x.float().to(self.device)
         batch_y = batch_y.float().to(self.device)
+        batch_x_mark = batch_x_mark.float().to(self.args.device)
+        batch_y_mark = batch_y_mark.float().to(self.args.device)
 
-        # batch_x_mark = batch_x_mark.float().to(self.args.device)
-        # batch_y_mark = batch_y_mark.float().to(self.args.device)
-
-        distr = self.model(batch_x)
+        distr = self.model(batch_x, batch_x_mark, batch_y_mark)
         loss = -distr.log_prob(batch_y)
 
         return loss.mean()
@@ -147,9 +151,9 @@ class Exp_MLP_proba(Exp_Basic):
             batch_x = batch_x.float().to(self.device)
             batch_y = batch_y.float().to(self.device)
 
-            # batch_x_mark = batch_x_mark.float().to(self.args.device)
-            # batch_y_mark = batch_y_mark.float().to(self.args.device)
-            distr = self.model(batch_x)
+            batch_x_mark = batch_x_mark.float().to(self.args.device)
+            batch_y_mark = batch_y_mark.float().to(self.args.device)
+            distr = self.model(batch_x, batch_x_mark, batch_y_mark)
 
             pres.append(batch_x.detach().cpu().numpy())
             preds.append(distr.sample([num_samples]).squeeze(1).cpu().numpy())

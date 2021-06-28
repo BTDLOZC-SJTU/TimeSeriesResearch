@@ -2,6 +2,9 @@ from utils.tools import dotdict
 from exp.exp_MLP_proba import Exp_MLP_proba
 import torch
 
+import os
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+
 args = dotdict()
 
 args.model = 'mlp_proba'
@@ -15,6 +18,10 @@ args.cols=[0]
 
 args.hist_len = 96
 args.pred_len = 24
+args.c_in = 1  # input target feature dimension
+args.c_out = 1  # output target feature dimension
+args.d_model = 16  # model dimension
+args.use_time_freq = True
 
 args.num_hidden_dimension = [512, 256, 128]
 
