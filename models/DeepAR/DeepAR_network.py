@@ -12,6 +12,7 @@ from modules.distribution_output import StudentTOutput
 def mean_abs_scaling(context, min_scale=1e-5):
     return context.abs().mean(1).clamp(min_scale, None).unsqueeze(1)
 
+
 class DeepAR(nn.Module):
     def __init__(self,
                  c_in: int,
@@ -124,15 +125,15 @@ class DeepAR(nn.Module):
         future_samples = []
 
         # (batch_size * num_samples, 1, c_in)
-        tgt = x[:, -1: , :]
+        tgt = repeated_x[:, -1: , :]
         for k in range(self.pred_len):
             # (batch_size * num_samples, 1, c_in + time_feat_dim)
-            decoder_inputs = torch.cat((tgt, y_mark[:, k, :]), dim=-1)
+            decoder_inputs = torch.cat((tgt, repeated_y_mark[:, k, :].unsqueeze(1)), dim=-1)
 
             rnn_outputs, repeated_states = self.rnn(decoder_inputs, repeated_states)
 
-            distr_args = self.args_proj(rnn_outputs)
-            distr = self.distr_output(distr_args, scale=repeated_scale)
+            distr_args = self.args_proj(rnn_outputs.unsqueeze(2))
+            distr = self.distr_output.distribution(distr_args, scale=repeated_scale)
 
             # (batch_size * num_samples, 1, c_out)
             new_samples = distr.sample()
@@ -144,11 +145,7 @@ class DeepAR(nn.Module):
 
         # (batch_size, num_samples, pred_len, c_out)
         return samples.reshape(
-            (
-                (-1, self.num_parallel_samples)
-                + (self.pred_len, )
-                + self.c_out
-            )
+                (self.num_parallel_samples, self.pred_len, self.c_out)
         )
 
     def forward(self,
@@ -160,8 +157,9 @@ class DeepAR(nn.Module):
         if mode:
             # train mode
             rnn_outputs, _, scale = self.unroll_encoder(x, x_mark, y, y_mark)
-            distr_args = self.args_proj(rnn_outputs)
-            return self.distr_output.distribution(distr_args, scale=scale.squeeze(-1))
+            distr_args = self.args_proj(rnn_outputs.unsqueeze(2))
+
+            return self.distr_output.distribution(distr_args, scale=scale)
 
         else:
             # eval mode

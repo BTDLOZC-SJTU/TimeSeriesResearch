@@ -166,16 +166,18 @@ class Exp_DeepAR(Exp_Basic):
 
             batch_x_mark = batch_x_mark.float().to(self.args.device)
             batch_y_mark = batch_y_mark.float().to(self.args.device)
-            preds = self._process_one_batch(test_data,
-                                           batch_x,
-                                           batch_y,
-                                           torch.cat((batch_x_mark, batch_y_mark), dim=1),
-                                           batch_y_mark,
-                                           False)
+            preds.append(self._process_one_batch(test_data,
+                                                 batch_x,
+                                                 batch_y,
+                                                 batch_x_mark,
+                                                 batch_y_mark,
+                                                 False).cpu().numpy())
 
 
             pres.append(batch_x.detach().cpu().numpy())
             trues.append(batch_y.detach().cpu().numpy())
+            if i > 10:
+                break
 
         pres = np.array(pres).squeeze(1)
         preds = np.array(preds)
