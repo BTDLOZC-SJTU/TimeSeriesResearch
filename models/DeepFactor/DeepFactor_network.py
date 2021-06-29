@@ -93,7 +93,8 @@ class RecurrentModule(nn.Module):
                                            hidden_size=hidden_size,
                                            num_layers=num_layers,
                                            dropout=dropout,
-                                           bidirectional=bidirectional)
+                                           bidirectional=bidirectional,
+                                           batch_first=True)
         self.projection = nn.Linear(hidden_size, num_factors)
 
     def forward(self, x):
