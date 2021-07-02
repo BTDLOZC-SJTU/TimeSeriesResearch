@@ -45,19 +45,21 @@ def ConstantAge(index: pd.DatetimeIndex) -> np.ndarray:
 def timeFeatures(dates: pd.DatetimeIndex, freq: str='H') -> np.ndarray:
     """
     supported freq:
-    > * Y: yearly = []
-    > * M: monthly = [month]
-    > * W: weekly = [day of month, week of year]
-    > * D: daily = [day of week, day of month, day of year]
-    > * H: hourly = [hour of day, day of week, day of month, day of year]
-    > * T: minutely = [minute of hour, hour of day, day of week, day of month, day of year]
-    > * S: secondly = [second of minute, minute of hour, hour of day, day of week, day of month, day of year]
+    > * Y: yearly = [age]
+    > * M: monthly = [age, month]
+    > * W: weekly = [age, day of month, week of year]
+    > * D: daily = [age, day of week, day of month, day of year]
+    > * B: business days = [age, day of week, day of month, day of year]
+    > * H: hourly = [age, hour of day, day of week, day of month, day of year]
+    > * T: minutely = [age, minute of hour, hour of day, day of week, day of month, day of year]
+    > * S: secondly = [age, second of minute, minute of hour, hour of day, day of week, day of month, day of year]
     """
     features_by_offsets = {
         offsets.YearEnd: [ConstantAge],
         offsets.MonthEnd: [ConstantAge, MonthOfYear],
         offsets.Week: [ConstantAge, DayOfMonth, WeekOfYear],
         offsets.Day: [ConstantAge, DayOfWeek, DayOfMonth, DayOfYear],
+        offsets.BusinessDay: [ConstantAge, DayOfWeek, DayOfMonth, DayOfYear],
         offsets.Hour: [ConstantAge, HourOfDay, DayOfWeek, DayOfMonth, DayOfYear],
         offsets.Minute: [ConstantAge, MinuteOfHour, HourOfDay, DayOfWeek, DayOfMonth, DayOfYear],
         offsets.Second: [ConstantAge, SecondOfMinute, MinuteOfHour, HourOfDay, DayOfWeek, DayOfMonth, DayOfYear]
