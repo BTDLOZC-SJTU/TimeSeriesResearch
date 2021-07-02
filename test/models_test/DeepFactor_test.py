@@ -1,21 +1,26 @@
-from utils.tools import dotdict
-from exp.exp_DeepFactor import Exp_DeepFactor
+import json
 import torch
-
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+
+from utils.tools import dotdict
+from exp.exp_DeepFactor import Exp_DeepFactor
+
 
 args = dotdict()
 
 args.model = 'deepfactor'
 
-# args.data_path = "../data/electricity/electricity.txt.gz"
-# args.data_path = "../data/exchange_rate/exchange_rate.txt.gz"
-# args.data_path = "../data/solar-energy/solar_AL.txt.gz"
-# args.data_path = "../data/simple_sin/simple_sin.csv"
-args.data_path = "../data/artificial/artificial_dataset.csv"
-args.freq = 'H'
-args.start_date = "2013-11-28 18:00:00"
+with open("../data/data_info.json",'r', encoding='utf8') as f:
+    data_info = json.load(f)
+
+# available select: "electricity", "exchange_rate", "solar-energy", "traffic", "artificial"
+args.data = "electricity"
+
+args.data_path = data_info[args.data]["data_path"]
+args.freq = data_info[args.data]["freq"]
+args.start_date = data_info[args.data]["start_date"]
+
 args.cols = [0]
 args.scale = True
 

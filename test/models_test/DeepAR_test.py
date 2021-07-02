@@ -1,19 +1,26 @@
-from utils.tools import dotdict
-from exp.exp_DeepAR import Exp_DeepAR
+import json
 import torch
-
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+
+from utils.tools import dotdict
+from exp.exp_DeepAR import Exp_DeepAR
+
 
 args = dotdict()
 
 args.model = 'deepar'
 
-# args.data_path = "../data/electricity/electricity.txt.gz"
-# args.data_path = "../data/exchange_rate/exchange_rate.txt.gz"
-args.data_path = "../data/simple_sin/simple_sin.csv"
-args.freq = 'H'
-args.start_date = "2014-01-01"
+with open("../data/data_info.json",'r', encoding='utf8') as f:
+    data_info = json.load(f)
+
+# available select: "electricity", "exchange_rate", "solar-energy", "traffic", "artificial"
+args.data = "electricity"
+
+args.data_path = data_info[args.data]["data_path"]
+args.freq = data_info[args.data]["freq"]
+args.start_date = data_info[args.data]["start_date"]
+
 args.cols=[0]
 
 args.hist_len = 128

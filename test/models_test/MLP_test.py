@@ -1,19 +1,25 @@
-from utils.tools import dotdict
-from exp.exp_MLP import Exp_MLP
+import json
 import torch
-
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+
+from utils.tools import dotdict
+from exp.exp_MLP import Exp_MLP
+
 
 args = dotdict()
 
 args.model = 'mlp'
 
-# args.data_path = "../data/electricity/electricity.txt.gz"
-args.data_path = "../data/exchange_rate/exchange_rate.txt.gz"
-# args.data_path = "../data/simple_sin/simple_sin.csv"
-args.freq = 'H'
-args.start_date = "2014-01-01"
+with open("../data/data_info.json",'r', encoding='utf8') as f:
+    data_info = json.load(f)
+
+# available select: "electricity", "exchange_rate", "solar-energy", "traffic", "artificial"
+args.data = "electricity"
+
+args.data_path = data_info[args.data]["data_path"]
+args.freq = data_info[args.data]["freq"]
+args.start_date = data_info[args.data]["start_date"]
 args.cols=[0]
 
 args.hist_len = 96
@@ -21,7 +27,7 @@ args.pred_len = 24
 args.c_in = 1  # input target feature dimension
 args.c_out = 1  # output target feature dimension
 args.d_model = 16  # model dimension
-args.use_time_freq = False
+args.use_time_freq = True
 
 args.num_hidden_dimension = [512, 256, 128]
 
