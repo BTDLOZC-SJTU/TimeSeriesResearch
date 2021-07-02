@@ -36,7 +36,7 @@ class DeepAR(nn.Module):
                 c_in==c_out
         ), "Auto-regressive model should have same input dimension and output dimension"
 
-        freq_map = {'Y': 1, 'M': 1, 'D': 3, 'H': 4, 'T': 5, 'S': 6}
+        freq_map = {'Y': 1, 'M': 2, 'D': 4, 'H': 5, 'T': 6, 'S': 7}
 
         self.c_in = c_in
         self.c_out = c_out

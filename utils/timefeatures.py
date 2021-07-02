@@ -55,12 +55,12 @@ def timeFeatures(dates: pd.DatetimeIndex, freq: str='H') -> np.ndarray:
     """
     features_by_offsets = {
         offsets.YearEnd: [ConstantAge],
-        offsets.MonthEnd: [MonthOfYear],
-        offsets.Week: [DayOfMonth, WeekOfYear],
-        offsets.Day: [DayOfWeek, DayOfMonth, DayOfYear],
-        offsets.Hour: [HourOfDay, DayOfWeek, DayOfMonth, DayOfYear],
-        offsets.Minute: [MinuteOfHour, HourOfDay, DayOfWeek, DayOfMonth, DayOfYear],
-        offsets.Second: [SecondOfMinute, MinuteOfHour, HourOfDay, DayOfWeek, DayOfMonth, DayOfYear]
+        offsets.MonthEnd: [ConstantAge, MonthOfYear],
+        offsets.Week: [ConstantAge, DayOfMonth, WeekOfYear],
+        offsets.Day: [ConstantAge, DayOfWeek, DayOfMonth, DayOfYear],
+        offsets.Hour: [ConstantAge, HourOfDay, DayOfWeek, DayOfMonth, DayOfYear],
+        offsets.Minute: [ConstantAge, MinuteOfHour, HourOfDay, DayOfWeek, DayOfMonth, DayOfYear],
+        offsets.Second: [ConstantAge, SecondOfMinute, MinuteOfHour, HourOfDay, DayOfWeek, DayOfMonth, DayOfYear]
     }
 
     offset = to_offset(freq)

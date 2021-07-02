@@ -17,7 +17,7 @@ class TimeFeatureEmbedding(nn.Module):
     def __init__(self, d_model, freq='H'):
         super(TimeFeatureEmbedding, self).__init__()
 
-        freq_map = {'Y': 1, 'M': 1, 'D': 3, 'H': 4, 'T': 5, 'S': 6}
+        freq_map = {'Y': 1, 'M': 2, 'D': 4, 'H': 5, 'T': 6, 'S': 7}
         d_inp = freq_map[freq.upper()]
         self.embed = nn.Linear(d_inp, d_model)
 
