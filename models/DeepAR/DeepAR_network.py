@@ -151,7 +151,6 @@ class DeepAR(nn.Module):
         future_samples = []
 
         # (batch_size * num_samples, 1, c_in)
-        tgt = repeated_x[:, -1:, :] / repeated_scale
         for k in range(self.pred_len):
             lags = get_lagged_subsequences_by_default(repeated_x,
                                                       self.hist_len - self.cntx_len + 1,
@@ -173,7 +172,6 @@ class DeepAR(nn.Module):
 
             repeated_x = torch.cat((repeated_x, new_samples), dim=1)
             future_samples.append(new_samples)
-            tgt = new_samples / repeated_scale
 
         # (batch_size * num_samples, pred_len, c_out)
         samples = torch.cat(future_samples, dim=1)
