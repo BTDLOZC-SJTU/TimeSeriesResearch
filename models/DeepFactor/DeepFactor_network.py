@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn import RNN, LSTM, GRU
 from torch import Tensor
-
+from pandas.tseries.frequencies import to_offset
 from typing import List, Callable
 
 from modules.distribution_output import StudentTOutput
@@ -31,16 +31,17 @@ class DeepFactor(nn.Module):
 
         self.c_in = c_in
         self.c_out = c_out
-        self.embedding_dim = embedding_dim * freq_map[freq.upper()]
+        self.freq = to_offset(freq)
+        self.embedding_dim = embedding_dim * freq_map[self.freq.name]
 
         self.global_model = RecurrentModule(cell_type=cell_type.upper(),
-                                            input_size=freq_map[freq.upper()],
+                                            input_size=freq_map[self.freq.name],
                                             hidden_size=num_hidden_global,
                                             num_layers=num_layers_global,
                                             num_factors=num_factors)
 
         self.local_model = RecurrentModule(cell_type=cell_type.upper(),
-                                           input_size=freq_map[freq.upper()] + self.embedding_dim,
+                                           input_size=freq_map[self.freq.name] + self.embedding_dim,
                                            hidden_size=num_hidden_global,
                                            num_layers=num_layers_local,
                                            num_factors=1)
