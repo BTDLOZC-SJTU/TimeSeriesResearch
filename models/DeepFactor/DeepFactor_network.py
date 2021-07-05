@@ -27,7 +27,7 @@ class DeepFactor(nn.Module):
                  ):
         super(DeepFactor, self).__init__()
 
-        freq_map = {'Y': 1, 'M': 2, 'D': 4, 'H': 5, 'T': 6, 'S': 7}
+        freq_map = {'Y': 1, 'M': 2, 'D': 4, 'B': 4, 'H': 5, 'T': 6, 'S': 7}
 
         self.c_in = c_in
         self.c_out = c_out
