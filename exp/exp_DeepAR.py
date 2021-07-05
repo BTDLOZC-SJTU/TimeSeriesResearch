@@ -28,6 +28,7 @@ class Exp_DeepAR(Exp_Basic):
             self.args.c_out,
             self.args.d_model,
             self.args.hist_len,
+            self.args.cntx_len,
             self.args.pred_len,
             self.args.num_layers,
             self.args.hidden_size,
@@ -82,7 +83,8 @@ class Exp_DeepAR(Exp_Basic):
 
         if mode:
             distr = self.model(batch_x, batch_x_mark, batch_y, batch_y_mark, mode)
-            loss = -distr.log_prob(torch.cat((batch_x, batch_y), dim=1))
+            loss = -distr.log_prob(torch.cat((batch_x, batch_y), dim=1)
+                                   [:, -self.args.cntx_len - self.args.pred_len:, :])
             return loss.mean()
         else:
             return self.model(batch_x, batch_x_mark, None, batch_y_mark, mode)

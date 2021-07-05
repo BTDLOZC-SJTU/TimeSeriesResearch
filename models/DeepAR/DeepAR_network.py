@@ -2,10 +2,12 @@ import torch
 import torch.nn as nn
 from torch.nn import RNN, LSTM, GRU
 from torch import Tensor
+from pandas.tseries.frequencies import to_offset
 
 from typing import List, Callable, Optional
 
 from utils.embed import DataEmbedding
+from utils.time_lags import get_lagged_subsequences_by_default
 from modules.distribution_output import StudentTOutput
 
 
@@ -19,6 +21,7 @@ class DeepAR(nn.Module):
                  c_out: int,
                  d_model: int,
                  hist_len: int,
+                 cntx_len: int,
                  pred_len: int,
                  num_layers: int = 1,
                  hidden_size: int = 40,
@@ -36,39 +39,46 @@ class DeepAR(nn.Module):
                 c_in==c_out
         ), "Auto-regressive model should have same input dimension and output dimension"
 
-        freq_map = {'Y': 1, 'M': 2, 'D': 4, 'H': 5, 'T': 6, 'S': 7}
+        freq_map = {'Y': 1, 'M': 2, 'D': 4, 'B': 4, 'H': 5, 'T': 6, 'S': 7}
 
         self.c_in = c_in
         self.c_out = c_out
         self.d_model = d_model
         self.hist_len = hist_len
+        self.cntx_len = cntx_len
         self.pred_len = pred_len
 
+        self.freq = to_offset(freq)
         self.num_layers = num_layers
         self.hidden_size = hidden_size
-        self.embedding_dim = embedding_dim * freq_map[freq.upper()]
+        self.embedding_dim = embedding_dim * freq_map[self.freq.name]
         self.cell_type = cell_type
         self.dropout_rate = dropout_rate
-        self.freq = freq
+
 
         self.num_parallel_samples = num_parallel_samples
         self.distr_output = distr_output
         self.scaling = scaling
 
-        self.time_feat_embedding = nn.Linear(freq_map[freq.upper()], self.embedding_dim)
+
+        self.time_feat_embedding = nn.Linear(freq_map[self.freq.name], self.embedding_dim)
 
         rnn_cell_map = {'RNN': RNN, 'LSTM': LSTM, 'GRU': GRU}
 
         # RNN input_size =
         # c_in(target feature dimension) +
         # self.embedding_dim(time feature dimension)
-        self.rnn = rnn_cell_map[cell_type](input_size=c_in + self.embedding_dim,
+        self.rnn = rnn_cell_map[cell_type](input_size=c_in + self.embedding_dim +
+                                                      self.hist_len -
+                                                      self.cntx_len,
                                            hidden_size=hidden_size,
                                            num_layers=num_layers,
                                            dropout=dropout_rate,
                                            batch_first=True)
 
         self.args_proj = self.distr_output.get_args_proj(hidden_size)
+
+
 
     def unroll_encoder(self,
                        x: Tensor,  # (batch_size, hist_len, c_in)
@@ -79,15 +89,30 @@ class DeepAR(nn.Module):
         if y is None or y_mark is None:
             time_feat = x_mark
             sequence = x
+            sequence_len = self.hist_len
+            subsequence_len = self.cntx_len
+
         else:
             time_feat = torch.cat((x_mark, y_mark), dim=1)
             sequence = torch.cat((x, y), dim=1)
+            sequence_len = self.hist_len + self.pred_len
+            subsequence_len = self.cntx_len + self.pred_len
 
+        lags = get_lagged_subsequences_by_default(sequence,
+                                                  sequence_len,
+                                                  subsequence_len)
         time_feat = self.time_feat_embedding(time_feat)
         scale = self.scaling(sequence)
         sequence = sequence / scale
 
-        inputs = torch.cat((sequence, time_feat), dim=-1)
+        # (batch_size, sub_seq_len, c_in, num_lags)
+        lags_scale = lags / scale.unsqueeze(-1)
+        input_lags = lags_scale.reshape(sequence.shape[0], subsequence_len, -1)
+
+        inputs = torch.cat((sequence[:, -subsequence_len: ,...],
+                            input_lags,
+                            time_feat[:, -subsequence_len: ,...]
+                            ), dim=-1)
 
         # inputs: (input, h_0) h_0 (num_layers, batch_size, hidden_size) zero without initialize
         # outputs (batch_size, hist_len, hidden_size) all state in sequence
@@ -95,6 +120,8 @@ class DeepAR(nn.Module):
         outputs, state = self.rnn(inputs)
 
         return outputs, state, scale
+
+
 
     def sampling_decoder(self,
                          x: Tensor,
@@ -125,10 +152,18 @@ class DeepAR(nn.Module):
         future_samples = []
 
         # (batch_size * num_samples, 1, c_in)
-        tgt = repeated_x[:, -1: , :]
+        tgt = repeated_x[:, -1:, :] / repeated_scale
         for k in range(self.pred_len):
+            lags = get_lagged_subsequences_by_default(repeated_x,
+                                                      self.hist_len - self.cntx_len + 1,
+                                                      1)
+            lags_scale = lags / scale.unsqueeze(-1)
+            input_lags = lags_scale.reshape(repeated_y_mark.shape[0], 1, -1)
+
             # (batch_size * num_samples, 1, c_in + time_feat_dim)
-            decoder_inputs = torch.cat((tgt, repeated_y_mark[:, k, :].unsqueeze(1)), dim=-1)
+            decoder_inputs = torch.cat((tgt,
+                                        input_lags,
+                                        repeated_y_mark[:, k, :].unsqueeze(1)), dim=-1)
 
             rnn_outputs, repeated_states = self.rnn(decoder_inputs, repeated_states)
 
