@@ -5,7 +5,7 @@ from typing import Optional, List, Tuple
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-from utils.timefeatures import timeFeatures
+from utils.time_features import timeFeatures
 from utils.scaler import StandardScaler
 
 import warnings
