@@ -82,11 +82,13 @@ class Exp_DeepAR(Exp_Basic):
         batch_y_mark = batch_y_mark.float().to(self.device)
 
         if mode:
+            # train mode
             distr = self.model(batch_x, batch_x_mark, batch_y, batch_y_mark, mode)
             loss = -distr.log_prob(torch.cat((batch_x, batch_y), dim=1)
                                    [:, -self.args.cntx_len - self.args.pred_len:, :])
             return loss.mean()
         else:
+            # eval mode
             return self.model(batch_x, batch_x_mark, None, batch_y_mark, mode)
 
     def vali(self, vali_data, vali_loader):

@@ -68,9 +68,7 @@ class DeepAR(nn.Module):
         # RNN input_size =
         # c_in(target feature dimension) +
         # self.embedding_dim(time feature dimension)
-        self.rnn = rnn_cell_map[cell_type](input_size=c_in + self.embedding_dim +
-                                                      self.hist_len -
-                                                      self.cntx_len,
+        self.rnn = rnn_cell_map[cell_type](input_size=self.embedding_dim + self.hist_len - self.cntx_len,
                                            hidden_size=hidden_size,
                                            num_layers=num_layers,
                                            dropout=dropout_rate,
@@ -87,30 +85,31 @@ class DeepAR(nn.Module):
                        y_mark: Optional[Tensor],  # (batch_size, pred_len, time_feat_dim)
                        ):
         if y is None or y_mark is None:
-            time_feat = x_mark
+            time_feat = x_mark[:, self.hist_len - self.cntx_len:, ]
             sequence = x
             sequence_len = self.hist_len
             subsequence_len = self.cntx_len
 
         else:
-            time_feat = torch.cat((x_mark, y_mark), dim=1)
+            time_feat = torch.cat((x_mark[:, self.hist_len - self.cntx_len:, ], y_mark), dim=1)
             sequence = torch.cat((x, y), dim=1)
             sequence_len = self.hist_len + self.pred_len
             subsequence_len = self.cntx_len + self.pred_len
 
         lags = get_lagged_subsequences_by_default(sequence,
                                                   sequence_len,
-                                                  subsequence_len)
+                                                  subsequence_len,
+                                                  True)
+
         time_feat = self.time_feat_embedding(time_feat)
-        scale = self.scaling(sequence)
+        scale = self.scaling(x[:, -self.cntx_len: , :])
         sequence = sequence / scale
 
         # (batch_size, sub_seq_len, c_in, num_lags)
         lags_scale = lags / scale.unsqueeze(-1)
         input_lags = lags_scale.reshape(sequence.shape[0], subsequence_len, -1)
 
-        inputs = torch.cat((sequence[:, -subsequence_len: ,...],
-                            input_lags,
+        inputs = torch.cat((input_lags,
                             time_feat[:, -subsequence_len: ,...]
                             ), dim=-1)
 
@@ -156,13 +155,12 @@ class DeepAR(nn.Module):
         for k in range(self.pred_len):
             lags = get_lagged_subsequences_by_default(repeated_x,
                                                       self.hist_len - self.cntx_len + 1,
-                                                      1)
+                                                      1,
+                                                      False)
             lags_scale = lags / scale.unsqueeze(-1)
             input_lags = lags_scale.reshape(repeated_y_mark.shape[0], 1, -1)
-
             # (batch_size * num_samples, 1, c_in + time_feat_dim)
-            decoder_inputs = torch.cat((tgt,
-                                        input_lags,
+            decoder_inputs = torch.cat((input_lags,
                                         repeated_y_mark[:, k, :].unsqueeze(1)), dim=-1)
 
             rnn_outputs, repeated_states = self.rnn(decoder_inputs, repeated_states)
@@ -172,13 +170,15 @@ class DeepAR(nn.Module):
 
             # (batch_size * num_samples, 1, c_out)
             new_samples = distr.sample()
+
+            repeated_x = torch.cat((repeated_x, new_samples), dim=1)
             future_samples.append(new_samples)
-            tgt = new_samples
+            tgt = new_samples / repeated_scale
 
         # (batch_size * num_samples, pred_len, c_out)
         samples = torch.cat(future_samples, dim=1)
 
-        # (batch_size, num_samples, pred_len, c_out)
+        # (num_samples, pred_len, c_out)
         return samples.reshape(
                 (self.num_parallel_samples, self.pred_len, self.c_out)
         )

@@ -115,12 +115,20 @@ def get_lagged_subsequences_by_freq(freq: str,
 
 def get_lagged_subsequences_by_default(sequence: torch.Tensor,
                                        sequence_len: int,
-                                       subsequence_len: int):
+                                       subsequence_len: int,
+                                       mode: bool):
 
     lagged_values = []
-    for i in range(1, sequence_len - subsequence_len + 1) :
-        begin_index = -i - subsequence_len
-        end_index = -i
-        lagged_values.append(sequence[:, begin_index: end_index, ...])
+    if mode == True:
+        # Train
+        for i in range(1, sequence_len - subsequence_len + 1) :
+            begin_index = -i - subsequence_len
+            end_index = -i
+            lagged_values.append(sequence[:, begin_index: end_index, ...])
+    else:
+        for i in range(0, sequence_len - subsequence_len) :
+            begin_index = -i - subsequence_len
+            end_index = -i if i > 0 else None
+            lagged_values.append(sequence[:, begin_index: end_index, ...])
 
     return torch.stack(lagged_values, dim=-1)
