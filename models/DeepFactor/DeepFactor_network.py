@@ -38,13 +38,15 @@ class DeepFactor(nn.Module):
                                             input_size=freq_map[self.freq.name],
                                             hidden_size=num_hidden_global,
                                             num_layers=num_layers_global,
-                                            num_factors=num_factors)
+                                            num_factors=num_factors,
+                                            bidirectional=True)
 
         self.local_model = RecurrentModule(cell_type=cell_type.upper(),
                                            input_size=freq_map[self.freq.name] + self.embedding_dim,
                                            hidden_size=num_hidden_global,
                                            num_layers=num_layers_local,
-                                           num_factors=1)
+                                           num_factors=1,
+                                           bidirectional=True)
 
 
         self.assemble_features_embedding = nn.Linear(1, self.embedding_dim)
@@ -96,10 +98,13 @@ class RecurrentModule(nn.Module):
                                            dropout=dropout,
                                            bidirectional=bidirectional,
                                            batch_first=True)
-        self.projection = nn.Linear(hidden_size, num_factors)
+        if not bidirectional:
+            self.projection = nn.Linear(hidden_size, num_factors)
+        else:
+            self.projection = nn.Linear(2 * hidden_size, num_factors)
 
     def forward(self, x):
-        x, _ = self.rnn(x)
+        x, _  = self.rnn(x)
         x = self.projection(x)
 
         return x

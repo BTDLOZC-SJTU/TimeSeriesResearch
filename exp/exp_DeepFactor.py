@@ -79,7 +79,7 @@ class Exp_DeepFactor(Exp_Basic):
     def _select_criterion(self):
         def negative_normal_likelihood(y, mu, sigma):
             return (torch.log(sigma)
-                    + 0.5 * math.log(2 * math.pi)
+                    # + 0.5 * math.log(2 * math.pi)
                     + 0.5 * torch.square((y - mu) / sigma))
         return negative_normal_likelihood
 
@@ -175,7 +175,7 @@ class Exp_DeepFactor(Exp_Basic):
             fixed_effect, random_effect =  self._process_one_batch(test_data,
                                                                    batch_x,
                                                                    batch_y,
-                                                                   torch.cat((batch_x_mark, batch_y_mark), dim=1),
+                                                                   # torch.cat((batch_x_mark, batch_y_mark), dim=1),
                                                                    batch_y_mark)
             distr = Normal(fixed_effect, random_effect)
 
