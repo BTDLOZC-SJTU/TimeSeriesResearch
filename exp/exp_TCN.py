@@ -37,12 +37,13 @@ class Exp_TCN(Exp_Basic):
         args = self.args
 
         data_set = Dataset_TS(data_path=self.args.data_path,
-                          freq=self.args.freq,
-                          start_date=self.args.start_date,
-                          flag=flag,
-                          hist_len=self.args.hist_len,
-                          pred_len=self.args.pred_len,
-                          cols=self.args.cols)
+                              freq=self.args.freq,
+                              start_date=self.args.start_date,
+                              flag=flag,
+                              hist_len=self.args.hist_len,
+                              pred_len=self.args.pred_len,
+                              cols=self.args.cols,
+                              scale=self.args.scale)
 
         print(flag, len(data_set))
 
@@ -173,9 +174,9 @@ class Exp_TCN(Exp_Basic):
         print('mse:{}, mae:{}'.format(metrics['MSE'], metrics['MAE']))
         print(metrics)
 
-        i = 0
-        plt.figure()
-        plt.plot(np.arange(len(pres[i, : -1, -1])), pres[i, : -1, -1], label='GroundTruth')
-        plt.plot(np.arange(len(pres[i, :, -1]) - len(preds[i, :, -1]), len(pres[i, :, -1])) - 1, preds[i, :, -1], label='Prediction')
-        plt.legend()
-        plt.show()
+        for i in range(8):
+            plt.figure()
+            plt.plot(np.arange(len(pres[i, : -1, -1])), pres[i, : -1, -1], label='GroundTruth')
+            plt.plot(np.arange(len(pres[i, :, -1]) - len(preds[i, :, -1]), len(pres[i, :, -1])) - 1, preds[i, :, -1], label='Prediction')
+            plt.legend()
+            plt.show()

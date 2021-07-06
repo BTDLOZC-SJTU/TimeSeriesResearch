@@ -56,6 +56,7 @@ class TemporalBlock(nn.Module):
         self.relu = nn.ReLU()
         self.init_weights()
 
+
     def init_weights(self):
         self.conv1.weight.data.normal_(0, 0.01)
         self.conv2.weight.data.normal_(0, 0.01)
@@ -112,11 +113,20 @@ class TCN(nn.Module):
             ]
         self.temporal_conv_net = nn.Sequential(*layers)
         self.projection = nn.Linear(dims[-1], c_out)
+        self.proj_len = nn.Linear(self.hist_len, self.pred_len)
 
     def forward(self, x, x_mark, y_mark):
-        x = self.temporal_conv_net(x.transpose(1, 2)).transpose(1, 2)
-        x = self.projection(x)
-        return x[:, -self.pred_len: ,:]
+        x = self.temporal_conv_net(x.transpose(1, 2)).transpose(1, 2) # (batch_size, hist_len, dim[-1])
+        x = self.projection(x) # (batch_size, hist_len, c_out)
+        # method 1: direct predict
+        # return x[:, -self.pred_len: ,:]
+
+        # method2: connect with Linear
+        # x = self.proj_len(x.transpose(1, 2)).transpose(1, 2) # (batch_size, pred_len, c_out)
+        # return x
+
+        # method3: use zero-padding
+
 
 
 

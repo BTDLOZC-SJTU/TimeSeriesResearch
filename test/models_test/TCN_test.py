@@ -21,6 +21,7 @@ args.data_path = data_info[args.data]["data_path"]
 args.freq = data_info[args.data]["freq"]
 args.start_date = data_info[args.data]["start_date"]
 args.cols=[0]
+args.scale = True
 
 args.hist_len = 96
 args.pred_len = 24
