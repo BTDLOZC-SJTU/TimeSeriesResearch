@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils import weight_norm
+from pandas.tseries.frequencies import to_offset
 
 from utils.embed import DataEmbedding
 
@@ -87,20 +88,27 @@ class TCN(nn.Module):
                  pred_len: int,
                  dilation_base: int = 2,
                  kernel_size: int = 2,
-                 dropout_rate: float = 0.2):
+                 embedding_dim: int = 10,
+                 dropout_rate: float = 0.2,
+                 freq: str = 'H'):
         super(TCN, self).__init__()
+
+        freq_map = {'Y': 1, 'M': 2, 'D': 4, 'B': 4, 'H': 5, 'T': 6, 'S': 7}
 
         self.hist_len = hist_len
         self.pred_len = pred_len
+
         assert hist_len >= pred_len,\
             "history length should larger or equal to prediction length"
 
+        self.freq = to_offset(freq)
+        self.embedding_dim = embedding_dim
         layers = []
         dims = num_hidden_dimensions
         num_levels = len(dims)
         for i in range(num_levels):
             dilation_size = dilation_base ** i
-            in_channels = c_in if i == 0 else dims[i - 1]
+            in_channels = c_in + self.embedding_dim if i == 0 else dims[i - 1]
             out_channels = dims[i]
             layers += [
                 TemporalBlock(in_channels,
@@ -114,10 +122,20 @@ class TCN(nn.Module):
         self.temporal_conv_net = nn.Sequential(*layers)
         self.projection = nn.Linear(dims[-1], c_out)
         self.proj_len = nn.Linear(self.hist_len, self.pred_len)
+        self.time_feat_embedding = nn.Linear(freq_map[self.freq.name], self.embedding_dim)
+
+    def create_inputs(self, x, x_mark, y_mark):
+        x = torch.cat((x, torch.zeros(size=(x.shape[0], self.pred_len, x.shape[2])).to(x.device)),
+                      dim=1)  # (batch_size, hist_len + pred_len, c_in)
+
+        mark_inp = torch.cat((x_mark, y_mark), dim=1)
+        mark_inp = self.time_feat_embedding(mark_inp)
+        inp = torch.cat((x, mark_inp), dim=-1)
+        return inp
 
     def forward(self, x, x_mark, y_mark):
-        x = self.temporal_conv_net(x.transpose(1, 2)).transpose(1, 2) # (batch_size, hist_len, dim[-1])
-        x = self.projection(x) # (batch_size, hist_len, c_out)
+        # x = self.temporal_conv_net(x.transpose(1, 2)).transpose(1, 2) # (batch_size, hist_len, dim[-1])
+        # x = self.projection(x) # (batch_size, hist_len, c_out)
         # method 1: direct predict
         # return x[:, -self.pred_len: ,:]
 
@@ -127,6 +145,10 @@ class TCN(nn.Module):
 
         # method3: use zero-padding
 
+        x = self.create_inputs(x, x_mark, y_mark)
+        x = self.temporal_conv_net(x.transpose(1, 2)).transpose(1, 2)  # (batch_size, hist_len + pred_len, dim[-1])
+        x = self.projection(x)  # (batch_size, hist_len + pred_len, c_out)
+        return x[:, -self.pred_len:, :]
 
 
 

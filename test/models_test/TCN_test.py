@@ -15,7 +15,7 @@ with open("../data/data_info.json",'r', encoding='utf8') as f:
     data_info = json.load(f)
 
 # available select: "electricity", "exchange_rate", "solar-energy", "traffic", "artificial"
-args.data = "electricity"
+args.data = "artificial"
 
 args.data_path = data_info[args.data]["data_path"]
 args.freq = data_info[args.data]["freq"]
@@ -32,6 +32,8 @@ args.num_hidden_dimension = [150, 150, 150, 150]
 args.dilation_base = 2
 args.kernel_size = 2
 args.dropout_rate = 0.2
+args.embedding_dim = 10
+
 
 args.batch_size = 64
 args.learning_rate = 0.001

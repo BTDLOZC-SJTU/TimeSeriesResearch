@@ -28,7 +28,9 @@ class Exp_TCN(Exp_Basic):
             self.args.pred_len,
             self.args.dilation_base,
             self.args.kernel_size,
+            self.args.embedding_dim,
             self.args.dropout_rate,
+            self.args.freq
         ).float().to(self.args.device)
 
         return model
