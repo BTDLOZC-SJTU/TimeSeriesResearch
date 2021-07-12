@@ -2,7 +2,8 @@
 
 这个开源项目主要是对经典的时间序列预测算法论文进行复现，模型主要参考自[GluonTS](https://github.com/awslabs/gluon-ts)，框架主要参考自[Informer](https://github.com/zhouhaoyi/Informer2020)。
 
-**建立原因**
+## 建立原因
+
 相较于mxnet和TF，Torch框架中的神经网络层需要提前指定输入维度：
 ```python
 # 建立线性层 TensorFlow vs PyTorch
@@ -27,7 +28,9 @@ estimator = DeepAREstimator(
 因此，希望能够实现一种更黑箱的框架，并做一些model和trick上的研究，这就是这个项目建立的原因啦。
 
 ## 数据加载
+
 项目中的Benchmark数据来源于[multivariate-time-series-data](https://github.com/laiguokun/multivariate-time-series-data)，并额外添加了人工生成的较为简单的时间序列，用于检测模型的正确性
+
 | Dataset | Dimension | Frequency | Start Date |
 | :----: | :----: | :----: | :----: |
 | Electricity | 321 | H | 2012-01-01 00:00:00 |
@@ -37,3 +40,28 @@ estimator = DeepAREstimator(
 | Artificial | 1 | H | 2013-11-28 18:00:00 |
 
 ![time-series data show](/images/data_show.png)
+
+## 时间特征
+
+#### 时间特征生成
+
+项目中时间特征完全由数据的时间频率决定，每个模型中都预先设定了频率特征长度参照，用户可以设定**embedding_size**参数来控制时间特征的Embedding维度，各时间频率对应特征如下表
+| Frequency | Length | Feature Generated |
+| :----: | :----: | :---- |
+| Y (yearly) | 1 | age |
+| M (monthly) | 2 | age, month |
+| W (weekly) | 3 | age, day of month, week of year |
+| D (daily) | 4 | age, day of week, day of month, day of year |
+| B (business days) | 4 | age, day of week, day of month, day of year |
+| H (hourly) | 5 | age, hour of day, day of week, day of month, day of year |
+| T (minutely) | 6 | age, minute of hour, hour of day, day of week, day of month, day of year |
+| S (secondly) | 7 | age, second of minute, minute of hour, hour of day, day of week, day of month, day of year |
+其中，特征均归一化到[-0.5, 0.5]，部分情况下可能超过该值（闰年等），在模型训练时可以不再额外进行归一化，统一了特征全局归一化和局部归一化的差异。
+
+#### 时间特征滞后处理
+
+部分RNN-based模型采用自回归的方式进行预测，经典做法是将单一观测变量$x_t$当作输入与上一时刻输出的状态隐向量$h_{t-1}$进行运算得到下一时刻的隐向量$h_{t}$并获取输出$x_{t + 1}$。但如果
+
+
+
+## 概率输出
