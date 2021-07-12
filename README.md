@@ -56,12 +56,15 @@ estimator = DeepAREstimator(
 | H (hourly) | 5 | age, hour of day, day of week, day of month, day of year |
 | T (minutely) | 6 | age, minute of hour, hour of day, day of week, day of month, day of year |
 | S (secondly) | 7 | age, second of minute, minute of hour, hour of day, day of week, day of month, day of year |
+
 其中，特征均归一化到[-0.5, 0.5]，部分情况下可能超过该值（闰年等），在模型训练时可以不再额外进行归一化，统一了特征全局归一化和局部归一化的差异。
 
 #### 时间特征滞后处理
 
-部分RNN-based模型采用自回归的方式进行预测，经典做法是将单一观测变量$x_t$当作输入与上一时刻输出的状态隐向量$h_{t-1}$进行运算得到下一时刻的隐向量$h_{t}$并获取输出$x_{t + 1}$。但如果
+部分RNN-based模型采用自回归的方式进行预测，经典做法是将单一观测变量$x_t$当作输入与上一时刻输出的状态隐向量$h_{t-1}$进行运算得到下一时刻的隐向量$h_{t}$并获取输出$x_{t + 1}$。但如果观测变量仅包含一个时间点的观测值，自回归的效果就会随着预测长度的增加迅速变差。此时就需要对时间特征进行之后处理，让单个观测向量包含多个观测值，提升长时间点预测效果。
 
+![diff lag](/images/diff_lag.png)
 
-
-## 概率输出
+本项目中编写了两种时间特征滞后处理
+1. *Default*: 设定一个滞后长度cntx_len，当前时间点的输入向量额外包含cntx_len个历史观测值;
+2. *By_Freq*: 根据时间频率特征选择滞后观测点，以小时H为例，选择将在[24, 48, 72, ...]等带有周期性质的滞后时间点中产生。但前提是历史观测长度大于最长滞后长度，否则会导致输入Tensor维度不一致的错误，目前当历史观测长度大于769时，能够保证不出现上述错误;
